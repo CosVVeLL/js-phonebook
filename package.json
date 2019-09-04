@@ -1,0 +1,38 @@
+{
+  "name": "js-pb",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "babel": "babel",
+    "babel-node": "babel-node",
+    "eslint": "eslint"
+  },
+  "keywords": [
+    "well23"
+  ],
+  "author": "Vasiliy",
+  "license": "ISC",
+  "dependencies": {
+    "date-fns": "^2.0.1",
+    "date-fns-tz": "^1.0.7",
+    "express": "^4.17.1",
+    "lodash": "^4.17.15"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.5.5",
+    "@babel/core": "^7.5.5",
+    "@babel/node": "^7.5.5",
+    "@babel/preset-env": "^7.5.5",
+    "eslint": "^5.16.0",
+    "jest": "^24.9.0",
+    "mocha": "^6.2.0",
+    "morgan": "^1.9.1",
+    "supertest": "^4.0.2",
+    "uuid-js": "^0.7.5"
+  },
+  "files": [
+    "dist"
+  ]
+}
