@@ -14,7 +14,7 @@ const logger = morgan('combined', { stream: accessLogStream });
 app.use(loggerErrors);
 app.use(logger);
 
-app.set('views', './views');
+app.set('views', './templates');
 app.set('view engine', 'pug');
 
 app.get('/', (req, res) => {
@@ -27,7 +27,7 @@ app.get('/', (req, res) => {
     const title = `Let's go, DUDE!`;
     const h1 = 'Welcome to The Phonebook';
     const message = `Records count: ${Object.keys(users).length}`;
-    res.render('index', { title, h1, message });
+    res.render('template-home', { title, h1, message });
 //    res.set('Content-Type', 'text/plain')
 //      .send(messages.join('\n'));
   });
