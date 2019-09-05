@@ -14,15 +14,22 @@ const logger = morgan('combined', { stream: accessLogStream });
 app.use(loggerErrors);
 app.use(logger);
 
+app.set('views', './views');
+app.set('view engine', 'pug');
+
 app.get('/', (req, res) => {
   phonebook().then((users) => {
     httpRequestLog(`GET ${req.url}`);
-    const messages = [
-      'Welcome to The Phonebook',
-      `Records count: ${Object.keys(users).length}`,
-    ];
-    res.set('Content-Type', 'text/plain')
-      .send(messages.join('\n'));
+//    const messages = [
+//      'Welcome to The Phonebook',
+//      `Records count: ${Object.keys(users).length}`,
+//    ];
+    const title = `Let's go, DUDE!`;
+    const h1 = 'Welcome to The Phonebook';
+    const message = `Records count: ${Object.keys(users).length}`;
+    res.render('index', { title, h1, message });
+//    res.set('Content-Type', 'text/plain')
+//      .send(messages.join('\n'));
   });
 });
 
