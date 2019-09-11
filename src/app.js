@@ -1,9 +1,13 @@
 import Express from 'express';
+import session from 'express-session';
 import debug from 'debug';
 import morgan from 'morgan';
-import phonebook from '../src/phonebook';
+
 import path from 'path';
 import fs from 'fs';
+
+import phonebook from '../src/phonebook';
+import crypto from 'crypto';
 
 const app = new Express();
 
@@ -16,20 +20,25 @@ app.use(logger);
 
 app.set('views', './templates');
 app.set('view engine', 'pug');
+app.use(session({
+  secret: 'secret key 23',
+  resave: false,
+  saveUninitialized: false,
+}));
 
 app.get('/', (req, res) => {
   phonebook().then((users) => {
     httpRequestLog(`GET ${req.url}`);
-//    const messages = [
-//      'Welcome to The Phonebook',
-//      `Records count: ${Object.keys(users).length}`,
-//    ];
+//  const messages = [
+//    'Welcome to The Phonebook',
+//    `Records count: ${Object.keys(users).length}`,
+//  ];
     const title = `Let's go, DUDE!`;
     const h1 = 'Welcome to The Phonebook';
     const message = `Records count: ${Object.keys(users).length}`;
-    res.render('template-home', { title, h1, message });
-//    res.set('Content-Type', 'text/plain')
-//      .send(messages.join('\n'));
+    res.render('home', { title, h1, message });
+//  res.set('Content-Type', 'text/plain')
+//    .send(`${messages.join('\n')}\n`);
   });
 });
 
@@ -70,6 +79,33 @@ app.get('/users', (req, res) => {
     const totalPages = Math.ceil(ids.length / perPage);
     res.json({ meta: { page, perPage, totalPages }, data: usersSubset });
   });
+});
+
+app.get('/increment', (req, res) => {
+  httpRequestLog(`GET ${req.url}`);
+  req.session.counter = req.session.counter || 0;
+  req.session.counter += 1;
+  res.render('increment', { title: '+1', increment: req.session.counter });
+});
+
+app.use((req, res, next) => {
+  const err = new Error('Page Not Found >:(');
+  err.status = 404;
+  next(err);
+});
+
+app.use((err, req, res, next) => {
+  res.status(err.status);
+  switch (err.status) {
+    case 404:
+      res.render(err.status.toString(), {
+        err: err.status,
+        message: err.message,
+      });
+      break;
+    default:
+      throw new Error('Unexpected error!');
+  }
 });
 
 export default app;

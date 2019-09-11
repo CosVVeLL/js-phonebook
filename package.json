@@ -7,7 +7,8 @@
     "test": "jest",
     "babel": "babel",
     "babel-node": "babel-node",
-    "eslint": "eslint"
+    "eslint": "eslint",
+    "nodemon": "nodemon"
   },
   "keywords": [
     "well23"
@@ -18,6 +19,7 @@
     "date-fns": "^2.0.1",
     "date-fns-tz": "^1.0.7",
     "express": "^4.17.1",
+    "express-session": "^1.16.2",
     "lodash": "^4.17.15",
     "pug": "^2.0.4"
   },
