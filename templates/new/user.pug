@@ -1,0 +1,21 @@
+extend ../layouts/app.pug
+
+block head
+  title New user
+
+block body
+  h1= h1
+  h3 Registration form
+  form(action='/users' method='post')
+    .
+      Nickname #[input(type='text' name='nickname' placeholder='Nickname' value=form.nickname)]
+    br
+    if errors.nickname
+      div(style='color:red')= errors.nickname
+    .
+      Password #[input(type='password' name='password' placeholder='Password')]
+    br
+    if errors.password
+      div(style='color:red')= errors.password
+    button(type='submit') Submit
+
