@@ -8,7 +8,7 @@ block body
   h3 Registration form
   form(action='/users' method='post')
     .
-      Nickname #[input(type='text' name='nickname' placeholder='Nickname' value=form.nickname)]
+      Nickname #[input(name='nickname' placeholder='Nickname' value=form.nickname)]
     br
     if errors.nickname
       div(style='color:red')= errors.nickname
@@ -18,4 +18,5 @@ block body
     if errors.password
       div(style='color:red')= errors.password
     button(type='submit') Submit
+  a(href='/') Home
 

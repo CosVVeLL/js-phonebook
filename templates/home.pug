@@ -2,5 +2,19 @@ extend layouts/app.pug
 
 block body
   h1 Welcome home
-  a(href='/users/new') Sign up
+  if currentUser.isGuest()
+    ul
+      li
+        a(href='/session/new') Sign in
+      li
+        a(href='/users/new') Sign up
+  else
+    div(style='font-family:monospace;font-size:18px')
+      | You are
+      |
+      span(style='color:#100087;font-weight:bold')= currentUser.nickname
+    br
+    form(action='/session?_method=DELETE' method='post')
+      button(type='submit') Sign out
+  a(href='/phonebook') Phonebook
 

@@ -1,0 +1,17 @@
+extend ../layouts/app.pug
+
+block body
+  h1= h1
+  h3= title
+  if error
+    div(style='color:red')= error
+  form(action='/session' method='post')
+    .
+      Nickname #[input(name='nickname' placeholder='Nickname' value=form.nickname)]
+    br
+    .
+      Password #[input(type='password' name='password' placeholder='Password')]
+    br
+    button(type='submit') Log in 
+  a(href='/') Home
+

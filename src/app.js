@@ -3,6 +3,7 @@ import session from 'express-session'; // управление сессиями 
 import bodyParser from 'body-parser'; // добавляет в req.body тело входящего запроса
 import morgan from 'morgan'; // для логгирования
 import debug from 'debug'; // для отладки (идёт с express)
+import methodOverride from 'method-override'; // позволяет использовать HTTP-глаголы там, где клиент не позволяет этого делать
 
 import path from 'path';
 import fs from 'fs';
@@ -28,6 +29,7 @@ const logger = morgan('combined', { stream: accessLogStream });
 app.use(loggerErrors);
 app.use(logger);
 
+app.use(methodOverride('_method'));
 app.set('views', './templates');
 app.set('view engine', 'pug');
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -48,7 +50,8 @@ app.use((req, res, next) => {
 })
 
 app.get('/', (req, res) => {
-  res.render('home', { title: 'Home' });
+  httpRequestLog(`GET ${req.url}`);
+  res.render('home', { users: users.length, title: 'Home' });
 });
 
 app.get('/phonebook', (req, res) => {
@@ -143,6 +146,38 @@ app.post('/users', (req, res) => {
   const h1 = 'Sign up! >:';
   res.status(422);
   res.render('new/user', { h1, form: req.body, errors });
+});
+
+app.get('/session/new', (req, res) => {
+  httpRequestLog(`GET ${req.url}`);
+  const h1 = 'Sign in';
+  const title = 'Login form';
+  res.render('new/session', { h1, title, form: {} });
+});
+
+app.post('/session', (req, res) => {
+  httpRequestLog(`POST ${req.url}`);
+  const { nickname, password } = req.body;
+  const user = users.find(user => user.nickname.toLowerCase() === nickname.toLowerCase());
+  if (user && user.passwordDigest === encrypt(password)) {
+    httpLog(`req.body:\n${JSON.stringify(req.body)}`);
+    req.session.nickname = user.nickname;
+    res.redirect('/');
+    return;
+  }
+  const h1 = 'Sign in';
+  const title = 'Login form';
+  const error = 'Invalid nickname or password';
+  httpLog(`error:\n${JSON.stringify({ ...req.body, error })}`);
+  res.status(422);
+  res.render('new/session', { h1, title, form: { nickname }, error });
+});
+
+app.delete('/session', (req, res) => {
+  httpRequestLog(`DELETE ${req.url}`);
+  req.session.destroy(() => {
+    res.redirect('/');
+  });
 });
 
 app.get('/increment', (req, res) => {
