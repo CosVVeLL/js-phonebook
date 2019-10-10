@@ -39,6 +39,13 @@ app.use(session({
   saveUninitialized: false,
 }));
 
+const requireAuth = (req, res, next) => {
+  if (req.locals.currentUser.isGuest()) {
+    next(new Error("Access Denied: You are not autheneicated"));
+  }
+  next();
+};
+
 app.use((req, res, next) => {
   if (req.session && req.session.nickname) {
     const { nickname } = req.session;
@@ -89,7 +96,7 @@ app.get('/phonebook/search.json', (req, res) => {
     httpRequestLog(`GET ${req.url}`);
     const normalizedSearch = q.trim().toLowerCase();
     const ids = Object.keys(pUsers);
-    
+
     const pUsersSubset = ids
       .filter(id => pUsers[id].name.toLowerCase().includes(normalizedSearch))
       .map(id => pUsers[id]);
