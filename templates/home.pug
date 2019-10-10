@@ -1,20 +1,29 @@
 extend layouts/app.pug
 
+append head
+  link(rel='stylesheet' href='/assets/bootstrap/dist/css/bootstrap.css')
+
 block body
+  nav.navbar.navbar-expand.navbar-light.bg-faded
+    if currentUser.isGuest()
+      ul.navbar-nav.ml-auto
+        li.nav-item
+          a.nav-link(href='/session/new') Sign in
+        li.nav-item
+          a.nav-link(href='/users/new') Sign up
+    else
+      form.form-inline.float-xs-right(action='/session?_method=DELETE' method='post')
+        button.bth.bth-link(type='submit') Sign out
   h1 Welcome home
-  if currentUser.isGuest()
-    ul
-      li
-        a(href='/session/new') Sign in
-      li
-        a(href='/users/new') Sign up
-  else
+  unless currentUser.isGuest()
     div(style='font-family:monospace;font-size:18px')
       | You are
       |
       span(style='color:#100087;font-weight:bold')= currentUser.nickname
-    br
-    form(action='/session?_method=DELETE' method='post')
-      button(type='submit') Sign out
+  .container
+    .mt-1
+      for message in flash
+        .alert(class=`alert-${message.type}`)
+          = message.message
   a(href='/phonebook') Phonebook
 
