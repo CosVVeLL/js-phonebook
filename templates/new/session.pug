@@ -1,7 +1,7 @@
 extend ../layouts/app.pug
 
 block body
-  h1= h1
+  h2= h2
   h3= title
   if error
     div(style='color:red')= error
@@ -12,6 +12,6 @@ block body
     .
       Password #[input(type='password' name='password' placeholder='Password')]
     br
-    button(type='submit') Log in 
+    button(type='submit') Log in
   a(href='/') Home
 

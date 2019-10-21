@@ -68,17 +68,17 @@ app.get('/', (req, res) => {
 app.get('/phonebook', (req, res) => {
   phonebook().then((pUsers) => {
     httpRequestLog(`GET ${req.url}`);
-//  const messages = [
-//    'Welcome to The Phonebook',
-//    `Records count: ${Object.keys(pUsers).length}`,
-//  ];
+    //  const messages = [
+    //    'Welcome to The Phonebook',
+    //    `Records count: ${Object.keys(pUsers).length}`,
+    //  ];
     const userNickname = req.session.nickname ? `${req.session.nickname}.` : 'DUDE!';
     const title = `Let's go, ${userNickname}`;
-    const h1 = 'Welcome to The Phonebook';
+    const h2 = 'Welcome to The Phonebook';
     const message = `Records count: ${Object.keys(pUsers).length}`;
-    res.render('phonebook', { title, h1, message });
-//  res.set('Content-Type', 'text/plain')
-//    .send(`${messages.join('\n')}\n`);
+    res.render('phonebook', { title, h2, message });
+    //  res.set('Content-Type', 'text/plain')
+    //    .send(`${messages.join('\n')}\n`);
   });
 });
 
@@ -124,7 +124,7 @@ app.get('/phonebook/users', (req, res) => {
 app.get('/users/new', (req, res) => {
   httpRequestLog(`GET ${req.url}`);
   res.render('new/user', {
-    h1: 'Sign up',
+    h2: 'Sign up',
     form: {},
     errors: {},
   });
@@ -152,6 +152,7 @@ app.post('/users', (req, res) => {
 
   if (Object.keys(errors).length === 0) {
     users.push(new User(nickname, encrypt(password)));
+    res.flash('info', 'Ah shit, here we go again.');
     res.redirect('/');
     return;
   }
@@ -159,7 +160,7 @@ app.post('/users', (req, res) => {
   httpLog(`errors: ${JSON.stringify(errors)}`);
   res.status(422);
   res.render('new/user', {
-    h1: 'Sign up! >:',
+    h2: 'Sign up! >:',
     form: req.body,
     errors,
   });
@@ -168,7 +169,7 @@ app.post('/users', (req, res) => {
 app.get('/session/new', (req, res) => {
   httpRequestLog(`GET ${req.url}`);
   res.render('new/session', {
-    h1: 'Sign in',
+    h2: 'Sign in',
     title: 'Login form',
     form: {},
   });
@@ -180,6 +181,7 @@ app.post('/session', (req, res) => {
   const user = users.find(user => user.nickname.toLowerCase() === nickname.toLowerCase());
   if (user && user.passwordDigest === encrypt(password)) {
     httpLog(`req.body: ${JSON.stringify(req.body)}`);
+    res.flash('info', `Welcome, ${user.nickname}!`);
     req.session.nickname = user.nickname;
     res.redirect('/');
     return;
@@ -188,7 +190,7 @@ app.post('/session', (req, res) => {
   httpLog(`error: ${JSON.stringify({ ...req.body, error })}`);
   res.status(422);
   res.render('new/session', {
-    h1: 'Sign in',
+    h2: 'Sign in',
     title: 'Login form',
     form: { nickname },
     error,
