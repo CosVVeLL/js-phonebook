@@ -1,7 +1,7 @@
 import UUID from 'uuid-js';
 
 import ApplicationEntity from './ApplicationEntity';
-import encrypt from '..src/lib/encrypt';
+import encrypt from '../lib/encrypt';
 
 export default class extends ApplicationEntity {
   guest = false;
@@ -33,6 +33,7 @@ export default class extends ApplicationEntity {
     this.id = UUID.create().toString();
     this.nickname = nickname;
     this.passwordDigest = encrypt(password);
+    this.password = password;
   }
 
   isGuest() {

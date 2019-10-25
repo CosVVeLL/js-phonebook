@@ -7,17 +7,24 @@ import methodOverride from 'method-override'; // позволяет исполь
 
 import path from 'path';
 import fs from 'fs';
-import crypto from 'crypto';
 
 import Guest from '../entities/Guest';
-import User from '../entities/User';
-import phonebook from './phonebook';
-import users from '../data/users';
-import encrypt from './lib/encrypt';
+import UserService from '../services/UserService';
+import * as repositories from '../repositories';
+import validator from '../lib/validation';
+import phonebook from '../lib/phonebook';
+// import users from '../data/users';
+import encrypt from '../lib/encrypt';
 import birds from './routers/birds';
-import flash from './flash'; // когда надо оповестить об (не) успешном выполнении какого-л. действия
+import flash from '../lib/flash'; // когда надо оповестить об (не) успешном выполнении какого-л. действия
 
-users.push(new User('admin', 'qwerty'));
+const repositoriyInstances = Object.keys(repositories).reduce((acc, name) => (
+  { ...acc, [name]: new repositories[name]() }
+), {});
+const validate = validator(repositoriyInstances);
+const userService = new UserService(repositoriyInstances, validate);
+userService.createUser('admin', 'qwerty')
+// users.push(new User('admin', 'qwerty'));
 
 const app = new Express();
 app.use('/birds', birds);
@@ -53,7 +60,7 @@ const requireAuth = (req, res, next) => {
 app.use((req, res, next) => {
   if (req.session && req.session.nickname) {
     const { nickname } = req.session;
-    res.locals.currentUser = users.find(user => user.nickname === nickname);
+    res.locals.currentUser = userService.findUser(nickname);
   } else {
     res.locals.currentUser = new Guest();
   }
@@ -62,7 +69,7 @@ app.use((req, res, next) => {
 
 app.get('/', (req, res) => {
   httpRequestLog(`GET ${req.url}`);
-  res.render('home', { users: users.length, title: 'Home' });
+  res.render('home', { users: userService.numberOfUsers(), title: 'Home' });
 });
 
 app.get('/phonebook', (req, res) => {
@@ -139,9 +146,11 @@ app.post('/users', (req, res) => {
   if (!nickname) {
     errors.nickname = "Can't be blank";
   } else {
-    const isUniq = users.find(user => (
-      user.nickname.toLowerCase() === nickname.toLowerCase()
-    )) === undefined;
+    httpLog(`!!!!!!!!!!!!!!!!!`);
+    const isUniq = userService.findUser(nickname) === undefined;
+    //  const isUniq = users.find(user => (
+    //    user.nickname.toLowerCase() === nickname.toLowerCase()
+    //  )) === undefined;
     if (!isUniq) {
       errors.nickname = 'Nickname already exist';
     }
@@ -151,7 +160,8 @@ app.post('/users', (req, res) => {
   }
 
   if (Object.keys(errors).length === 0) {
-    users.push(new User(nickname, password));
+    userService.createUser(nickname, password);
+    //  users.push(new User(nickname, password));
     res.flash('info', 'Ah shit, here we go again.');
     res.redirect('/');
     return;
@@ -178,7 +188,7 @@ app.get('/session/new', (req, res) => {
 app.post('/session', (req, res) => {
   httpRequestLog(`POST ${req.url}`);
   const { nickname, password } = req.body;
-  const user = users.find(user => user.nickname.toLowerCase() === nickname.toLowerCase());
+  const user = userService.findUser(nickname);
   if (user && user.passwordDigest === encrypt(password)) {
     httpLog(`req.body: ${JSON.stringify(req.body)}`);
     res.flash('info', `Welcome, ${user.nickname}!`);

@@ -10,5 +10,8 @@ append body
       | You are
       |
       span(style='color:#100087;font-weight:bold')= currentUser.nickname
+  if users
+    div
+      p Number of users #{users}
   a(href='/phonebook') Phonebook
 
