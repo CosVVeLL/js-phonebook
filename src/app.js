@@ -13,11 +13,11 @@ import Guest from '../entities/Guest';
 import User from '../entities/User';
 import phonebook from './phonebook';
 import users from '../data/users';
-import encrypt from './encrypt';
+import encrypt from './lib/encrypt';
 import birds from './routers/birds';
 import flash from './flash'; // когда надо оповестить об (не) успешном выполнении какого-л. действия
 
-users.push(new User('admin', encrypt('qwerty')));
+users.push(new User('admin', 'qwerty'));
 
 const app = new Express();
 app.use('/birds', birds);
@@ -151,7 +151,7 @@ app.post('/users', (req, res) => {
   }
 
   if (Object.keys(errors).length === 0) {
-    users.push(new User(nickname, encrypt(password)));
+    users.push(new User(nickname, password));
     res.flash('info', 'Ah shit, here we go again.');
     res.redirect('/');
     return;
