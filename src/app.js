@@ -1,4 +1,4 @@
-import Express from 'express';
+import express from 'express';
 import session from 'express-session'; // управление сессиями через req.session
 import bodyParser from 'body-parser'; // добавляет в req.body тело входящего запроса
 import morgan from 'morgan'; // для логгирования
@@ -18,15 +18,7 @@ import encrypt from '../lib/encrypt';
 import birds from './routers/birds';
 import flash from '../lib/flash'; // когда надо оповестить об (не) успешном выполнении какого-л. действия
 
-const repositoriyInstances = Object.keys(repositories).reduce((acc, name) => (
-  { ...acc, [name]: new repositories[name]() }
-), {});
-const validate = validator(repositoriyInstances);
-const userService = new UserService(repositoriyInstances, validate);
-userService.createUser('admin', 'qwerty')
-// users.push(new User('admin', 'qwerty'));
-
-const app = new Express();
+const app = new express();
 app.use('/birds', birds);
 
 const httpRequestLog = debug('http:request');
@@ -37,8 +29,16 @@ const logger = morgan('combined', { stream: accessLogStream });
 app.use(loggerErrors);
 app.use(logger);
 
+const repositoryInstances = Object.keys(repositories).reduce((acc, name) => (
+  { ...acc, [name]: new repositories[name]() }
+), {});
+const validate = validator(repositoryInstances);
+const userService = new UserService(repositoryInstances, validate);
+userService.createUser('admin', 'qwerty')
+// users.push(new User('admin', 'qwerty'));
+
 const pathway = path.join(__dirname, 'public');
-app.use('/assets', Express.static(pathway)); // специальный маршрут, кот. связывается с обработчикам, кот. в свою очередь принимает на вход путь, по которому он будет просматривать файлы на диске
+app.use('/assets', express.static(pathway)); // специальный маршрут, кот. связывается с обработчикам, кот. в свою очередь принимает на вход путь, по которому он будет просматривать файлы на диске
 app.use(methodOverride('_method'));
 app.set('views', './templates');
 app.set('view engine', 'pug');
@@ -60,16 +60,99 @@ const requireAuth = (req, res, next) => {
 app.use((req, res, next) => {
   if (req.session && req.session.nickname) {
     const { nickname } = req.session;
-    res.locals.currentUser = userService.findUser(nickname);
+    res.locals.currentUser = userService.find(nickname, 'nickname');
   } else {
     res.locals.currentUser = new Guest();
   }
   next();
-})
+});
 
 app.get('/', (req, res) => {
   httpRequestLog(`GET ${req.url}`);
+  httpLog(userService.numberOfUsers());
   res.render('home', { users: userService.numberOfUsers(), title: 'Home' });
+});
+
+app.get('/users/new', (req, res) => {
+  httpRequestLog(`GET ${req.url}`);
+  res.render('new/user', {
+    h2: 'Sign up',
+    form: {},
+    errors: {},
+  });
+});
+
+app.post('/users', (req, res) => {
+  httpRequestLog(`POST ${req.url}`);
+  httpLog(`req.body: ${JSON.stringify(req.body)}`);
+  const { nickname, password } = req.body;
+  const creationResult = userService.createUser(nickname, password)
+  const [, errors] = creationResult ? creationResult : [, creationResult];
+
+  if (!errors) {
+    res.flash('info', 'Ah shit, here we go again.');
+    res.redirect('/');
+    return;
+  }
+
+  httpLog(`errors: ${JSON.stringify(errors)}`);
+  res.status(422);
+  res.render('new/user', {
+    h2: 'Sign up! >:',
+    form: req.body,
+    errors,
+  });
+});
+
+app.get('/session/new', (req, res) => {
+  httpRequestLog(`GET ${req.url}`);
+  res.render('new/session', {
+    h2: 'Sign in',
+    title: 'Login form',
+    form: {},
+  });
+});
+
+app.post('/session', (req, res) => {
+  httpRequestLog(`POST ${req.url}`);
+  const { nickname, password } = req.body;
+  const user = userService.find(nickname, 'nickname');
+  if (user && user.passwordDigest === encrypt(password)) {
+    httpLog(`req.body: ${JSON.stringify(req.body)}`);
+    res.flash('info', `Welcome, ${user.nickname}!`);
+    req.session.nickname = user.nickname;
+    res.redirect('/');
+    return;
+  }
+  const error = 'Invalid nickname or password';
+  httpLog(`error: ${JSON.stringify({ ...req.body, error })}`);
+  res.status(422);
+  res.render('new/session', {
+    h2: 'Sign in',
+    title: 'Login form',
+    form: { nickname },
+    error,
+  });
+});
+
+app.delete('/session', (req, res) => {
+  httpRequestLog(`DELETE ${req.url}`);
+  delete req.session.nickname;
+  res.flash('info', `Good bye, ${res.locals.currentUser.nickname}`);
+  res.redirect('/');
+  //  req.session.destroy(() => {
+  //    res.redirect('/');
+  //  });
+});
+
+app.get('/increment', (req, res) => {
+  httpRequestLog(`GET ${req.url}`);
+  req.session.counter = req.session.counter || 0;
+  req.session.counter += 1;
+  res.render('increment', {
+    title: '+1',
+    increment: req.session.counter,
+  });
 });
 
 app.get('/phonebook', (req, res) => {
@@ -125,105 +208,6 @@ app.get('/phonebook/users', (req, res) => {
       .map(id => pUsers[id]);
     const totalPages = Math.ceil(ids.length / perPage);
     res.json({ meta: { page, perPage, totalPages }, data: pUsersSubset });
-  });
-});
-
-app.get('/users/new', (req, res) => {
-  httpRequestLog(`GET ${req.url}`);
-  res.render('new/user', {
-    h2: 'Sign up',
-    form: {},
-    errors: {},
-  });
-});
-
-app.post('/users', (req, res) => {
-  httpRequestLog(`POST ${req.url}`);
-  const { nickname, password } = req.body;
-  httpLog(`req.body: ${JSON.stringify(req.body)}`);
-
-  const errors = {};
-  if (!nickname) {
-    errors.nickname = "Can't be blank";
-  } else {
-    httpLog(`!!!!!!!!!!!!!!!!!`);
-    const isUniq = userService.findUser(nickname) === undefined;
-    //  const isUniq = users.find(user => (
-    //    user.nickname.toLowerCase() === nickname.toLowerCase()
-    //  )) === undefined;
-    if (!isUniq) {
-      errors.nickname = 'Nickname already exist';
-    }
-  }
-  if (!password) {
-    errors.password = "Can't be blank";
-  }
-
-  if (Object.keys(errors).length === 0) {
-    userService.createUser(nickname, password);
-    //  users.push(new User(nickname, password));
-    res.flash('info', 'Ah shit, here we go again.');
-    res.redirect('/');
-    return;
-  }
-
-  httpLog(`errors: ${JSON.stringify(errors)}`);
-  res.status(422);
-  res.render('new/user', {
-    h2: 'Sign up! >:',
-    form: req.body,
-    errors,
-  });
-});
-
-app.get('/session/new', (req, res) => {
-  httpRequestLog(`GET ${req.url}`);
-  res.render('new/session', {
-    h2: 'Sign in',
-    title: 'Login form',
-    form: {},
-  });
-});
-
-app.post('/session', (req, res) => {
-  httpRequestLog(`POST ${req.url}`);
-  const { nickname, password } = req.body;
-  const user = userService.findUser(nickname);
-  if (user && user.passwordDigest === encrypt(password)) {
-    httpLog(`req.body: ${JSON.stringify(req.body)}`);
-    res.flash('info', `Welcome, ${user.nickname}!`);
-    req.session.nickname = user.nickname;
-    res.redirect('/');
-    return;
-  }
-  const error = 'Invalid nickname or password';
-  httpLog(`error: ${JSON.stringify({ ...req.body, error })}`);
-  res.status(422);
-  res.render('new/session', {
-    h2: 'Sign in',
-    title: 'Login form',
-    form: { nickname },
-    error,
-  });
-});
-
-app.delete('/session', (req, res) => {
-  httpRequestLog(`DELETE ${req.url}`);
-  delete req.session.nickname;
-  res.flash('info', `Good bye, ${res.locals.currentUser.nickname}`);
-  res.redirect('/');
-  //  req.session.destroy(() => {
-  //    res.redirect('/');
-  //  });
-});
-
-app.get('/increment', (req, res) => {
-  httpRequestLog(`GET ${req.url}`);
-  req.session.counter = req.session.counter || 0;
-  req.session.counter += 1;
-  res.render('increment', {
-    title: '+1',
-    increment: req.session.counter,
   });
 });
 

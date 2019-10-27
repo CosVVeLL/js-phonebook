@@ -11,12 +11,14 @@ block body
       Nickname #[input(name='nickname' placeholder='Nickname' value=form.nickname)]
     br
     if errors.nickname
-      div(style='color:red')= errors.nickname
+      for message in errors.nickname
+        div(style='color:red')= message
     .
       Password #[input(type='password' name='password' placeholder='Password')]
     br
     if errors.password
-      div(style='color:red')= errors.password
+      for message in errors.password
+        div(style='color:red')= message
     button(type='submit') Submit
   a(href='/') Home
 
