@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import validate from 'validate.js';
 
-export default (repositories) => {
+export default ({ repositories }) => {
   const entityValidator = entity => validate(entity, entity.constructor.constraints);
   validate.validators.uniqueness = (value, options, key, attributes) => {
     if (!value) {

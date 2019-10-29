@@ -38,7 +38,7 @@ export default class extends ApplicationEntity {
 
   constructor(nickname, password) {
     super();
-    this.repositoryName = 'UserRepository';
+    this.repositoryName = 'User';
     this.nickname = nickname;
     this.passwordDigest = encrypt(password);
     this.password = password;

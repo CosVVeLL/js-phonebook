@@ -1,6 +1,6 @@
-import UserRepository from './UserRepository';
+import User from './UserRepository';
 
-export {
-  UserRepository,
+export default {
+  User,
 };
 

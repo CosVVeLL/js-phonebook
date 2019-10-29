@@ -1,33 +1,32 @@
 import validate from 'validate.js';
 
 import ApplicationService from './ApplicationService';
-import { User } from '../entities';
 
 export default class extends ApplicationService {
   createUser(nickname, password) {
-    const user = new User(nickname, password);
+    const user = new this.entities.User(nickname, password);
     const errors = this.validate(user);
     if (!errors) {
       delete(user.password);
-      this.UserRepository.save(user);
+      this.repositories.User.save(user);
     }
     return [user, errors];
   }
 
   find(params, arg) {
     if (!arg) {
-      return this.UserRepository.findBy(params, 'nickname');
+      return this.repositories.User.findBy(params, 'nickname');
     } else {
-      return this.UserRepository.findBy(params, findBy);
+      return this.repositories.User.findBy(params, findBy);
     }
   }
 
   findBy(params) {
-    return this.UserRepository.findBy(params);
+    return this.repositories.User.findBy(params);
   }
 
   numberOfUsers() {
-    return this.UserRepository.all().length;
+    return this.repositories.User.all().length;
   }
 }
 

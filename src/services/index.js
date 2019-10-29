@@ -1,6 +1,6 @@
-import UserService from './UserService';
+import User from './UserService';
 
-export {
-  UserService,
+export default {
+  User,
 };
 

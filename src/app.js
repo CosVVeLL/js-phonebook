@@ -7,9 +7,10 @@ import methodOverride from 'method-override'; // позволяет исполь
 import path from 'path';
 import fs from 'fs';
 
-import { UserService } from './services';
-import * as repositories from './repositories';
-import validator from './lib/validation';
+// import { UserService } from './services';
+// import * as repositories from './repositories';
+// import validator from './lib/validation';
+import serviceManager from './';
 import encrypt from './lib/encrypt';
 import { birds, phonebook } from './routers';
 import session from './lib/session';
@@ -27,11 +28,13 @@ const logger = morgan('combined', { stream: accessLogStream });
 app.use(loggerErrors);
 app.use(logger);
 
-const repositoryInstances = Object.keys(repositories).reduce((acc, name) => (
-  { ...acc, [name]: new repositories[name]() }
-), {});
-const validate = validator(repositoryInstances);
-const userService = new UserService(repositoryInstances, validate);
+// const repositoryInstances = Object.keys(repositories).reduce((acc, name) => (
+//   { ...acc, [name]: new repositories[name]() }
+// ), {});
+// const validate = validator(repositoryInstances);
+// const userService = new UserService(repositoryInstances, validate);
+const manager = serviceManager();
+const userService = manager.services.User;
 userService.createUser('admin', 'qwerty')
 
 const pathway = path.join(__dirname, 'public');

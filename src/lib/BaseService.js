@@ -1,9 +1,8 @@
 export default class {
-  constructor(repositories, validate) {
+  constructor({ entities, repositories, validate }) {
+    this.entities = entities;
+    this.repositories = repositories;
     this.validate = validate;
-    Object.keys(repositories).forEach((name) => {
-      this[name] = repositories[name];
-    });
   }
 }
 
