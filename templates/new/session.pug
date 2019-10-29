@@ -1,10 +1,11 @@
-extend ../layouts/app.pug
+extends ../layouts/app.pug
 
 block body
   h2= h2
-  h3= title
   if error
-    div(style='color:red')= error
+    .container.mt-1.alert.alert-danger
+      = error
+  h3= title
   form(action='/session' method='post')
     .
       Nickname #[input(name='nickname' placeholder='Nickname' value=form.nickname)]

@@ -1,5 +1,3 @@
-import UUID from 'uuid-js';
-
 import ApplicationEntity from './ApplicationEntity';
 import encrypt from '../lib/encrypt';
 
@@ -9,6 +7,7 @@ export default class extends ApplicationEntity {
   static constraints = {
     nickname: {
       presence: {
+        allowEmpty: false,
         message: "can't be blank",
       },
       uniqueness: {
@@ -27,6 +26,7 @@ export default class extends ApplicationEntity {
     },
     password: {
       presence: {
+        allowEmpty: false,
         message: "can't be blank",
       },
       length: {
@@ -38,7 +38,6 @@ export default class extends ApplicationEntity {
 
   constructor(nickname, password) {
     super();
-    this.id = UUID.create().toString();
     this.repositoryName = 'UserRepository';
     this.nickname = nickname;
     this.passwordDigest = encrypt(password);
@@ -47,6 +46,14 @@ export default class extends ApplicationEntity {
 
   isGuest() {
     return this.guest;
+  }
+
+  getNickname() {
+    return this.nickname;
+  }
+
+  getPasswordDigest() {
+    return this.passwordDigest;
   }
 }
 

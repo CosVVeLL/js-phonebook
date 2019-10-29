@@ -2,7 +2,11 @@ import express from 'express';
 import { format } from 'date-fns';
 import { utcToZonedTime } from 'date-fns-tz';
 
+import session from '../lib/session';
+
 const router = express.Router();
+
+router.use(session.options, session.handle);
 
 router.use((req, res, next) => {
   const date = utcToZonedTime(new Date(), 'Europe/Moscow');
@@ -18,5 +22,5 @@ router.get('/about', (req, res) => {
   res.send('About birds');
 });
 
-export default router;                                                                                                  //module.exports = router;
+export default router; // module.exports = router;
 

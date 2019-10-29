@@ -1,5 +1,4 @@
 import express from 'express';
-import session from 'express-session'; // управление сессиями через req.session
 import bodyParser from 'body-parser'; // добавляет в req.body тело входящего запроса
 import morgan from 'morgan'; // для логгирования
 import debug from 'debug'; // для отладки (идёт с express)
@@ -8,18 +7,17 @@ import methodOverride from 'method-override'; // позволяет исполь
 import path from 'path';
 import fs from 'fs';
 
-import Guest from '../entities/Guest';
-import UserService from '../services/UserService';
-import * as repositories from '../repositories';
-import validator from '../lib/validation';
-import phonebook from '../lib/phonebook';
-// import users from '../data/users';
-import encrypt from '../lib/encrypt';
-import birds from './routers/birds';
-import flash from '../lib/flash'; // когда надо оповестить об (не) успешном выполнении какого-л. действия
+import { UserService } from './services';
+import * as repositories from './repositories';
+import validator from './lib/validation';
+import encrypt from './lib/encrypt';
+import { birds, phonebook } from './routers';
+import session from './lib/session';
+import flash from './lib/flash'; // когда надо оповестить об (не) успешном выполнении какого-л. действия
 
 const app = new express();
 app.use('/birds', birds);
+app.use('/phonebook', phonebook);
 
 const httpRequestLog = debug('http:request');
 const httpLog = debug('http:log');
@@ -35,37 +33,22 @@ const repositoryInstances = Object.keys(repositories).reduce((acc, name) => (
 const validate = validator(repositoryInstances);
 const userService = new UserService(repositoryInstances, validate);
 userService.createUser('admin', 'qwerty')
-// users.push(new User('admin', 'qwerty'));
 
 const pathway = path.join(__dirname, 'public');
 app.use('/assets', express.static(pathway)); // специальный маршрут, кот. связывается с обработчикам, кот. в свою очередь принимает на вход путь, по которому он будет просматривать файлы на диске
 app.use(methodOverride('_method'));
-app.set('views', './templates');
+app.set('views', './templates'); // process.cwd() + ...
 app.set('view engine', 'pug');
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(session({
-  secret: 'secret key 23',
-  resave: false,
-  saveUninitialized: false,
-}));
+app.use(session.options, session.handle);
 app.use(flash());
 
 const requireAuth = (req, res, next) => {
-  if (req.locals.currentUser.isGuest()) {
+  if (res.locals.currentUser.isGuest()) {
     next(new Error("Access Denied: You are not autheneicated"));
   }
   next();
 };
-
-app.use((req, res, next) => {
-  if (req.session && req.session.nickname) {
-    const { nickname } = req.session;
-    res.locals.currentUser = userService.find(nickname, 'nickname');
-  } else {
-    res.locals.currentUser = new Guest();
-  }
-  next();
-});
 
 app.get('/', (req, res) => {
   httpRequestLog(`GET ${req.url}`);
@@ -116,11 +99,11 @@ app.get('/session/new', (req, res) => {
 app.post('/session', (req, res) => {
   httpRequestLog(`POST ${req.url}`);
   const { nickname, password } = req.body;
-  const user = userService.find(nickname, 'nickname');
-  if (user && user.passwordDigest === encrypt(password)) {
-    httpLog(`req.body: ${JSON.stringify(req.body)}`);
-    res.flash('info', `Welcome, ${user.nickname}!`);
-    req.session.nickname = user.nickname;
+  const user = userService.find(nickname);
+  if (user && user.getPasswordDigest() === encrypt(password)) {
+    httpLog(`req.body (start session): ${JSON.stringify(req.body)}`);
+    req.session.nickname = user.getNickname();
+    res.flash('success', `Welcome, ${user.getNickname()}!`);
     res.redirect('/');
     return;
   }
@@ -138,7 +121,7 @@ app.post('/session', (req, res) => {
 app.delete('/session', (req, res) => {
   httpRequestLog(`DELETE ${req.url}`);
   delete req.session.nickname;
-  res.flash('info', `Good bye, ${res.locals.currentUser.nickname}`);
+  res.flash('primary', `Good bye, ${res.locals.currentUser.nickname}`);
   res.redirect('/');
   //  req.session.destroy(() => {
   //    res.redirect('/');
@@ -152,62 +135,6 @@ app.get('/increment', (req, res) => {
   res.render('increment', {
     title: '+1',
     increment: req.session.counter,
-  });
-});
-
-app.get('/phonebook', (req, res) => {
-  phonebook().then((pUsers) => {
-    httpRequestLog(`GET ${req.url}`);
-    //  const messages = [
-    //    'Welcome to The Phonebook',
-    //    `Records count: ${Object.keys(pUsers).length}`,
-    //  ];
-    const userNickname = req.session.nickname ? `${req.session.nickname}.` : 'DUDE!';
-    const title = `Let's go, ${userNickname}`;
-    const h2 = 'Welcome to The Phonebook';
-    const message = `Records count: ${Object.keys(pUsers).length}`;
-    res.render('phonebook', { title, h2, message });
-    //  res.set('Content-Type', 'text/plain')
-    //    .send(`${messages.join('\n')}\n`);
-  });
-});
-
-app.get('/phonebook/users/:id', (req, res) => {
-  phonebook().then((pUsers) => {
-    const { id } = req.params;
-    httpRequestLog(`GET ${req.url}`);
-    const pUser = pUsers[id];
-    if (!pUser) {
-      res.setStatus(404);
-    }
-    res.json({ data: pUser });
-  });
-});
-
-app.get('/phonebook/search.json', (req, res) => {
-  phonebook().then((pUsers) => {
-    const { q } = req.query;
-    httpRequestLog(`GET ${req.url}`);
-    const normalizedSearch = q.trim().toLowerCase();
-    const ids = Object.keys(pUsers);
-
-    const pUsersSubset = ids
-      .filter(id => pUsers[id].name.toLowerCase().includes(normalizedSearch))
-      .map(id => pUsers[id]);
-    res.json({ data: pUsersSubset });
-  });
-});
-
-app.get('/phonebook/users', (req, res) => {
-  phonebook().then((pUsers) => {
-    const { page, perPage } = req.query;
-    httpRequestLog(`GET ${req.url}`);
-    const ids = Object.keys(pUsers);
-
-    const pUsersSubset = ids.slice((page * perPage) - perPage, page * perPage)
-      .map(id => pUsers[id]);
-    const totalPages = Math.ceil(ids.length / perPage);
-    res.json({ meta: { page, perPage, totalPages }, data: pUsersSubset });
   });
 });
 
@@ -227,9 +154,12 @@ app.use((err, req, res, next) => {
       });
       break;
     default:
-      throw new Error(err/*'Unexpected error!'*/);
+      throw new Error(`Unexpected error: ${err}`);
   }
 });
 
 export default app;
+export {
+  userService,
+};
 
