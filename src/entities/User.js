@@ -34,14 +34,23 @@ export default class extends ApplicationEntity {
         message: 'must be at least 6 characters',
       },
     },
+    confirmPassword: {
+      equality: {
+        attribute: 'password',
+        message: "^Passwords don't match",
+      },
+    },
   };
 
-  constructor(nickname, password) {
+  constructor(nickname, password, confirmPassword) {
     super();
     this.repositoryName = 'User';
-    this.nickname = nickname;
+    this.nickname = nickname.toLowerCase();
+    this.handle = nickname;
     this.passwordDigest = encrypt(password);
+
     this.password = password;
+    this.confirmPassword = confirmPassword;
   }
 
   isGuest() {
@@ -50,6 +59,9 @@ export default class extends ApplicationEntity {
 
   getNickname() {
     return this.nickname;
+  }
+  getHandle() {
+    return this.handle;
   }
 
   getPasswordDigest() {

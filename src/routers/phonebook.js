@@ -17,8 +17,10 @@ router.get('/', (req, res) => {
     //    'Welcome to The Phonebook',
     //    `Records count: ${Object.keys(pUsers).length}`,
     //  ];
-    const nickname = req.session.nickname ? `${req.session.nickname}` : 'DUDE!';
-    const title = `Let's go, ${nickname}`;
+    const handle = res.locals.currentUser.isGuest() ?
+      'DUDE!' :
+      `${res.locals.currentUser.getHandle()}`;
+    const title = `Let's go, ${handle}`;
     const h2 = 'Welcome to The Phonebook';
     const message = `Records count: ${Object.keys(pUsers).length}`;
     res.render('phonebook', { title, h2, message });

@@ -9,7 +9,7 @@ append body
     div(style='font-family:monospace;font-size:18px')
       | You are
       |
-      span(style='color:#100087;font-weight:bold')= currentUser.nickname
+      span(style='color:#100087;font-weight:bold')= currentUser.getHandle()
   if users
     div
       p Number of users #{users}

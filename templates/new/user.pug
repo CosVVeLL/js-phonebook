@@ -2,23 +2,31 @@ extends ../layouts/app.pug
 
 append head
   title New user
+  link(rel='stylesheet' type='text/css' href='../../src/public/css/bb.css')
 
 block body
   h2= h2
   h3 Registration form
   form(action='/users' method='post')
-    .
-      Nickname #[input(name='nickname' placeholder='Nickname' value=form.nickname)]
-    br
-    if errors.nickname
-      for message in errors.nickname
-        div(style='color:red')= message
-    .
-      Password #[input(type='password' name='password' placeholder='Password')]
-    br
-    if errors.password
-      for message in errors.password
-        div(style='color:red')= message
-    button(type='submit') Submit
+    .main
+      .field
+        label(for='n') Nickname
+        input(name='nickname' placeholder='Nickname' id='n' value=form.nickname)
+      if errors.nickname
+        for message in errors.nickname
+          div(style='color:red')= message
+      .field
+        label(for='p') Password
+        input(type='password' name='password' placeholder='Password' id='p')
+      if errors.password
+        for message in errors.password
+          div(style='color:red')= message
+      .field
+        label(for='cp') Confirm password
+        input(type='password' name='confirmPassword' placeholder='Password' id='cp')
+      if errors.confirmPassword
+        for message in errors.confirmPassword
+          div(style='color:red')= message
+      button(type='submit') Submit
   a(href='/') Home
 

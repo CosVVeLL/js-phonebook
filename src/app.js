@@ -22,7 +22,8 @@ app.use('/phonebook', phonebook);
 
 const httpRequestLog = debug('http:request');
 const httpLog = debug('http:log');
-const accessLogStream = fs.createWriteStream(path.join(__dirname, '../access.log'), { flags: 'a' });
+const httpStartSession = debug('http:log:start session');
+const accessLogStream = fs.createWriteStream(path.join(process.cwd(), './access.log'), { flags: 'a' });
 const loggerErrors = morgan('dev', { skip: (req, res) => res.statusCode < 400 });
 const logger = morgan('combined', { stream: accessLogStream });
 app.use(loggerErrors);
@@ -35,7 +36,7 @@ app.use(logger);
 // const userService = new UserService(repositoryInstances, validate);
 const manager = serviceManager();
 const userService = manager.services.User;
-userService.createUser('admin', 'qwerty')
+userService.createUser('admin', 'qwerty', 'qwerty');
 
 const pathway = path.join(__dirname, 'public');
 app.use('/assets', express.static(pathway)); // специальный маршрут, кот. связывается с обработчикам, кот. в свою очередь принимает на вход путь, по которому он будет просматривать файлы на диске
@@ -55,8 +56,8 @@ const requireAuth = (req, res, next) => {
 
 app.get('/', (req, res) => {
   httpRequestLog(`GET ${req.url}`);
-  httpLog(userService.numberOfUsers());
-  res.render('home', { users: userService.numberOfUsers(), title: 'Home' });
+  httpLog(userService.repositories.User.numberOfUsers());
+  res.render('home', { users: userService.repositories.User.numberOfUsers(), title: 'Home' });
 });
 
 app.get('/users/new', (req, res) => {
@@ -71,8 +72,8 @@ app.get('/users/new', (req, res) => {
 app.post('/users', (req, res) => {
   httpRequestLog(`POST ${req.url}`);
   httpLog(`req.body: ${JSON.stringify(req.body)}`);
-  const { nickname, password } = req.body;
-  const creationResult = userService.createUser(nickname, password)
+  const { nickname, password, confirmPassword } = req.body;
+  const creationResult = userService.createUser(nickname, password, confirmPassword);
   const [, errors] = creationResult ? creationResult : [, creationResult];
 
   if (!errors) {
@@ -102,11 +103,11 @@ app.get('/session/new', (req, res) => {
 app.post('/session', (req, res) => {
   httpRequestLog(`POST ${req.url}`);
   const { nickname, password } = req.body;
-  const user = userService.find(nickname);
+  const user = userService.repositories.User.find(nickname);
   if (user && user.getPasswordDigest() === encrypt(password)) {
-    httpLog(`req.body (start session): ${JSON.stringify(req.body)}`);
+    httpStartSession(`req.body: ${JSON.stringify(req.body)}`);
     req.session.nickname = user.getNickname();
-    res.flash('success', `Welcome, ${user.getNickname()}!`);
+    res.flash('success', `Welcome, ${user.getHandle()}!`);
     res.redirect('/');
     return;
   }
@@ -124,7 +125,7 @@ app.post('/session', (req, res) => {
 app.delete('/session', (req, res) => {
   httpRequestLog(`DELETE ${req.url}`);
   delete req.session.nickname;
-  res.flash('primary', `Good bye, ${res.locals.currentUser.nickname}`);
+  res.flash('primary', `Good bye, ${res.locals.currentUser.getHandle()}`);
   res.redirect('/');
   //  req.session.destroy(() => {
   //    res.redirect('/');

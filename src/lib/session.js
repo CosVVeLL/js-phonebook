@@ -12,7 +12,7 @@ const options = expressSession({
 const handle = (req, res, next) => {
   if (req.session && req.session.nickname) {
     const { nickname } = req.session;
-    res.locals.currentUser = userService.find(nickname);
+    res.locals.currentUser = userService.repositories.User.find(nickname);
   } else {
     res.locals.currentUser = new Guest();
   }

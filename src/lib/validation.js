@@ -1,8 +1,17 @@
 import _ from 'lodash';
 import validate from 'validate.js';
 
+import BaseEntity from './BaseEntity';
+
 export default ({ repositories }) => {
-  const entityValidator = entity => validate(entity, entity.constructor.constraints);
+  const entityValidator = (entity, options = { exceptions: false }) => {
+    const errors = validate(entity, entity.constructor.constraints);
+    if (errors && options.exception) {
+      throw new Error(`${entity} is not valid (${errors})`);
+    }
+    return errors;
+  };
+
   validate.validators.uniqueness = (value, options, key, attributes) => {
     if (!value) {
       return null;
@@ -10,9 +19,11 @@ export default ({ repositories }) => {
     const className = attributes.repositoryName;
     const repository = repositories[className];
     const scope = options.scope || [];
+    const nickname = options.nickname || '';
     const params = { [key]: value, ..._.pick(attributes, scope) };
     const result = repository.findBy(params);
-    if (result && result.id !== attributes.id) {
+    const isEntity = result instanceof BaseEntity;
+    if (isEntity && result.id !== attributes.id) {
       return 'already exists';
     }
     return null;
