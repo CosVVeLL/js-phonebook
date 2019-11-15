@@ -1,3 +1,5 @@
+import knex from 'knex';
+
 import express from 'express';
 import debug from 'debug';
 
@@ -5,29 +7,31 @@ import phonebook from '../lib/phonebook';
 import session from '../lib/session';
 
 const router = express.Router();
+const client = knex({
+  client: 'pg',
+  connection: {
+    host: '/var/run/postgresql',
+  },
+});
 
 const httpRequestLog = debug('http:request');
 
 router.use(session.options, session.handle);
 
-router.get('/', (req, res) => {
-  phonebook().then((pUsers) => {
-    httpRequestLog(`GET ${req.url}`);
-    //  const messages = [
-    //    'Welcome to The Phonebook',
-    //    `Records count: ${Object.keys(pUsers).length}`,
-    //  ];
-    const handle = res.locals.currentUser.isGuest() ?
-      'DUDE!' :
-      `${res.locals.currentUser.getHandle()}`;
-    const title = `Let's go, ${handle}`;
-    const h2 = 'Welcome to The Phonebook';
-    const message = `Records count: ${Object.keys(pUsers).length}`;
-    res.render('phonebook', { title, h2, message });
-    //  res.set('Content-Type', 'text/plain')
-    //     .send(`${messages.join('\n')}\n`);
-  });
+router.get('/', async (req, res) => {
+  httpRequestLog(`GET ${req.url}`);
+  const handle = res.locals.currentUser.isGuest() ?
+    'DUDE!' :
+    `${res.locals.currentUser.getHandle()}`;
+  const title = `Let's go, ${handle}`;
+  const h2 = 'Welcome to The Phonebook';
+  const numOfUsers = await client('phonebook').count('*').then(([{ count }]) => count);
+  const message = `Records count: ${numOfUsers}`;
+  await res.render('phonebook', { title, h2, message });
+  //  res.set('Content-Type', 'text/plain')
+  //     .send(`${messages.join('\n')}\n`);
 });
+
 router.get('/users/:id', (req, res) => {
   phonebook().then((pUsers) => {
     const { id } = req.params;
