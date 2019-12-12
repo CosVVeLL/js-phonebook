@@ -1,6 +1,6 @@
 import knex from 'knex';
 import { promises as fs } from 'fs';
-import phonebook from './src/lib/phonebook';
+import phonebook from '../src/lib/phonebook';
 
 const client = knex({
   client: 'pg',
