@@ -10,6 +10,4 @@ services:
 
 before_script:
   - psql -c 'create database travis_ci_test;' -U postgres
-  - psql -c "create user travis_ci_test_user WITH PASSWORD 'rrwcscrz2';" -U postgres
-  - 'npm run create'
 
