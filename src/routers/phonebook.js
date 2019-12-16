@@ -14,9 +14,9 @@ const client = knex({
   },
 });
 
-const httpRequestLog = debug('http:request');
-
 router.use(session.options, session.handle);
+
+const httpRequestLog = debug('http:request:phonebook');
 
 router.get('/', async (req, res) => {
   httpRequestLog(`GET ${req.url}`);
@@ -32,43 +32,41 @@ router.get('/', async (req, res) => {
   //     .send(`${messages.join('\n')}\n`);
 });
 
-router.get('/users/:id', (req, res) => {
-  phonebook().then((pUsers) => {
-    const { id } = req.params;
-    httpRequestLog(`GET ${req.url}`);
-    const pUser = pUsers[id];
-    if (!pUser) {
-      res.setStatus(404);
-    }
-    res.json({ data: pUser });
-  });
+router.get('/users/:id', async (req, res) => {
+  httpRequestLog(`GET ${req.url}`);
+  const { id } = req.params;
+  const [pUser] = await client('phonebook')
+    .where({ id })
+    .select('name', 'phone');
+  if (!pUser) {
+    await res.setStatus(404);
+  }
+  await res.json({ data: pUser });
 });
 
-router.get('/search.json', (req, res) => {
-  phonebook().then((pUsers) => {
-    const { q } = req.query;
-    httpRequestLog(`GET ${req.url}`);
-    const normalizedSearch = q.trim().toLowerCase();
-    const ids = Object.keys(pUsers);
+router.get('/search.json', async (req, res) => {
+  httpRequestLog(`GET ${req.url}`);
+  const { q } = req.query;
+  const normalizedSearch = q.trim().toLowerCase();
+  const pUsersSubset = await client('phonebook')
+    .where('name', 'ILIKE', `%${q}%`)
+    .select('name', 'phone');
 
-    const pUsersSubset = ids
-      .filter(id => pUsers[id].name.toLowerCase().includes(normalizedSearch))
-      .map(id => pUsers[id]);
-    res.json({ data: pUsersSubset });
-  });
+  await res.json({ data: pUsersSubset });
 });
 
-router.get('/users', (req, res) => {
-  phonebook().then((pUsers) => {
-    const { page, perPage } = req.query;
-    httpRequestLog(`GET ${req.url}`);
-    const ids = Object.keys(pUsers);
+router.get('/users', async (req, res) => {
+  httpRequestLog(`GET ${req.url}`);
+  const { page, perPage } = req.query;
+  httpRequestLog(`GET ${req.url}`);
+  const pUsers = await client.select('name', 'phone')
+    .from('phonebook')
+    .limit(perPage)
+    .offset((page - 1) * perPage);
 
-    const pUsersSubset = ids.slice((page * perPage) - perPage, page * perPage)
-      .map(id => pUsers[id]);
-    const totalPages = Math.ceil(ids.length / perPage);
-    res.json({ meta: { page, perPage, totalPages }, data: pUsersSubset });
-  });
+  const [{ count }] = await client('phonebook').count('*');
+  const totalPages = Math.ceil(count / perPage);
+  await res.json({ meta: { page, perPage, totalPages }, data: pUsers });
 });
 
 export default router;
