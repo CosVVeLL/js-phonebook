@@ -49,7 +49,7 @@ app.use(flash());
 
 const requireAuth = (req, res, next) => {
   if (res.locals.currentUser.isGuest()) {
-    next(new Error("Access Denied: You are not autheneicated"));
+    next(new Error("Access Denied: You are not authenticated"));
   }
   next();
 };

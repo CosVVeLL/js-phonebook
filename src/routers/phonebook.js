@@ -3,7 +3,7 @@ import knex from 'knex';
 import express from 'express';
 import debug from 'debug';
 
-import phonebook from '../lib/phonebook';
+// import phonebook from '../lib/phonebook';
 import session from '../lib/session';
 
 const router = express.Router();
