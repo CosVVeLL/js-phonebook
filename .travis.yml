@@ -46,7 +46,7 @@ install:
 before_script:
   - psql --version
   - export "PATH=/usr/lib/postgresql/11/bin:$PATH"
-  - psql -c 'CREATE ROLE travis SUPERUSER LOGIN CREATEDB;' -U postgres
+    #  - psql -c 'CREATE ROLE travis SUPERUSER LOGIN CREATEDB;' -U postgres
 
 script:
   - psql -c 'SELECT version();'
